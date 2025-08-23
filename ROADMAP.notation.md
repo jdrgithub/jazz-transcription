@@ -41,12 +41,13 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - Interactive menu-based interface
 - Main loop functionality
 - Reflect implemented methods as menu options
-- **Status:** 🔄 In Progress (Task 2)
+- **Status:** ✅ Completed
 
 **Step 1.3: Data Selection**
 - Select representative test solos from Weimar database
 - Import chosen solos into local database
 - Verify data quality and format
+- **Status:** 🔄 In Progress (Task 1 completed, Task 2 starting)
 
 ### Phase 2: Symbolic Input
 **Purpose:** Import notation from various formats for analysis.
@@ -115,9 +116,9 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 ## Current Status
 
 **Current Phase:** Phase 1 - Data Access & Setup
-**Current Step:** Step 1.2 - CLI Interface
-**Current Task:** Task 1 - Database Query
-**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task1-database-query`
+**Current Step:** Step 1.3 - Data Selection
+**Current Task:** Task 2 - Solo Selection
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task2-solo-selection`
 
 ## Success Criteria
 

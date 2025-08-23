@@ -178,4 +178,28 @@
 - Key columns: melid, title, performer, key, avgtempo
 - Database contains 200,809 jazz solos with complete metadata
 
-**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task1-database-query` 
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task1-database-query`
+
+## Phase 1.3: Data Selection - Task 2
+
+**Date:** ✅ Completed
+
+**Goal:** Implement solo selection functionality from Weimar database
+
+**Plan:**
+1. Add solo selection by ID functionality
+2. Create methods to display detailed solo information
+3. Add CLI options to select specific solos
+4. Implement solo data extraction for analysis
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Added solo selection by ID functionality
+- Created methods to display detailed solo information
+- Added CLI options to select specific solos
+- Implemented chord changes formatting with proper alignment
+- Added section label handling (A1:, A2:, B1:, etc.)
+- Formatted chord changes with 4 bars per line and consistent padding
+
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task2-solo-selection` 
