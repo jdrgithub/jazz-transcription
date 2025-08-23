@@ -2,7 +2,11 @@
 
 ## Phase 1.1: Weimar Jazz Database Access
 
+<<<<<<< HEAD
 **Date:** Completed
+=======
+**Date:** Starting now
+>>>>>>> main
 
 **Goal:** Research and implement basic access to Weimar Jazz Database to get test transcriptions
 
