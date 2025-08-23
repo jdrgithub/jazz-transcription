@@ -18,7 +18,8 @@ class JazzAnalysisCLI:
         """Display the main menu options."""
         print("\nJazz Analysis CLI")
         print("=" * 20)
-        print("1. Exit")
+        print("1. Download Weimar Jazz Database")
+        print("2. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -28,6 +29,9 @@ class JazzAnalysisCLI:
     def handle_choice(self, choice: str) -> None:
         """Handle user menu choice."""
         if choice == "1":
+            print("Weimar Jazz Database download option selected.")
+            # TODO: Implement download functionality
+        elif choice == "2":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
