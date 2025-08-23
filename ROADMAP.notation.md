@@ -116,8 +116,8 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 
 **Current Phase:** Phase 1 - Data Access & Setup
 **Current Step:** Step 1.2 - CLI Interface
-**Current Task:** Task 2 - Menu Display
-**Feature Branch:** `notation/phase1-data-access/step2-cli-interface/task2-menu-display`
+**Current Task:** Task 1 - Database Query
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task1-database-query`
 
 ## Success Criteria
 
