@@ -18,7 +18,7 @@ class WeimarJazzClient:
     def __init__(self):
         """Initialize the Weimar Jazz Database client."""
         self.base_url = "https://jazzomat.hfm-weimar.de"
-        self.database_url = f"{self.base_url}/downloads/wjazzd.db"
+        self.database_url = f"{self.base_url}/download/downloads/wjazzd.db"
         self.session = requests.Session()
     
     def search_transcriptions(self, query: str) -> List[Dict]:
