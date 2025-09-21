@@ -25,7 +25,8 @@ class JazzAnalysisCLI:
         print("1. Download Weimar Jazz Database")
         print("2. Browse Available Solos")
         print("3. Select Solo for Analysis")
-        print("4. Exit")
+        print("4. Extract Solo Data")
+        print("5. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -41,6 +42,8 @@ class JazzAnalysisCLI:
         elif choice == "3":
             self.select_solo()
         elif choice == "4":
+            self.extract_solo_data()
+        elif choice == "5":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -197,6 +200,102 @@ class JazzAnalysisCLI:
             formatted_lines.append(f"| {line} |")
         
         return '\n'.join(formatted_lines)
+    
+    def extract_solo_data(self) -> None:
+        """Extract solo notes and timing data for analysis."""
+        db_path = "data/weimar_jazz_database.db"
+        
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+        
+        try:
+            # Get solo ID from user
+            solo_id = input("Enter solo ID to extract data: ").strip()
+            if not solo_id:
+                print("No solo ID provided.")
+                return
+            
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Get solo metadata
+            cursor.execute("""
+                SELECT si.melid, si.title, si.performer, si.key, si.avgtempo, 
+                       si.instrument, si.style, si.chordchanges
+                FROM solo_info si
+                WHERE si.melid = ?
+            """, (solo_id,))
+            
+            solo_info = cursor.fetchone()
+            if not solo_info:
+                print(f"Solo with ID {solo_id} not found.")
+                conn.close()
+                return
+            
+            melid, title, performer, key, tempo, instrument, style, chord_changes = solo_info
+            
+            print(f"\nExtracting data for: {title} by {performer}")
+            print(f"Key: {key}, Tempo: {tempo}, Instrument: {instrument}, Style: {style}")
+            
+            # Get melody notes data
+            cursor.execute("""
+                SELECT onset, pitch, duration, velocity
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+            
+            notes = cursor.fetchall()
+            if not notes:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+            
+            print(f"Found {len(notes)} notes in the solo.")
+            
+            # Create output directory
+            output_dir = "extracted_data"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            # Generate output filename
+            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_performer = "".join(c for c in performer if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            filename = f"{solo_id}_{safe_performer}_{safe_title}.txt"
+            output_path = os.path.join(output_dir, filename)
+            
+            # Write extracted data to file
+            with open(output_path, 'w') as f:
+                f.write(f"Jazz Solo Analysis Data\n")
+                f.write(f"=" * 50 + "\n\n")
+                f.write(f"Title: {title}\n")
+                f.write(f"Performer: {performer}\n")
+                f.write(f"Key: {key}\n")
+                f.write(f"Tempo: {tempo} BPM\n")
+                f.write(f"Instrument: {instrument}\n")
+                f.write(f"Style: {style}\n")
+                f.write(f"Solo ID: {melid}\n\n")
+                
+                f.write(f"Chord Changes:\n")
+                f.write(f"{self.format_chord_changes(chord_changes)}\n\n")
+                
+                f.write(f"Melody Notes ({len(notes)} total):\n")
+                f.write(f"{'Onset':<10} {'Pitch':<8} {'Duration':<10} {'Velocity':<8}\n")
+                f.write(f"{'-' * 40}\n")
+                
+                for onset, pitch, duration, velocity in notes:
+                    f.write(f"{onset:<10.3f} {pitch:<8} {duration:<10.3f} {velocity:<8}\n")
+            
+            print(f"Successfully extracted solo data to: {output_path}")
+            print(f"Data includes {len(notes)} notes with timing and pitch information.")
+            
+            conn.close()
+            
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error extracting solo data: {e}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
