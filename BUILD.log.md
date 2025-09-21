@@ -202,4 +202,29 @@
 - Added section label handling (A1:, A2:, B1:, etc.)
 - Formatted chord changes with 4 bars per line and consistent padding
 
-**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task2-solo-selection` 
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task2-solo-selection`
+
+## Phase 1.3: Data Selection - Task 3
+
+**Date:** Starting now
+
+**Goal:** Implement solo data extraction and preparation for analysis
+
+**Plan:**
+1. Add functionality to extract solo notes and timing data
+2. Create methods to prepare solo data for analysis
+3. Add CLI options to export solo data
+4. Implement data validation and quality checks
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Added "Extract Solo Data" option to CLI menu
+- Implemented extract_solo_data() method to extract notes and timing data
+- Added functionality to query melody table for note data (onset, pitch, duration, velocity)
+- Created output directory structure for extracted data
+- Implemented data validation and quality checks
+- Added formatted text output with metadata and chord changes
+- Generated safe filenames based on solo ID, performer, and title
+
+**Feature Branch:** `notation/phase1-data-access/step3-data-selection/task3-data-extraction`
