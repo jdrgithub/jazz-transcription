@@ -228,3 +228,35 @@
 - Generated safe filenames based on solo ID, performer, and title
 
 **Feature Branch:** `notation/phase1-data-access/step3-data-selection/task3-data-extraction`
+
+## Phase 2.1: MusicXML Import - Task 1
+
+**Date:** Starting now
+
+**Goal:** Create MusicXML parser to import notation from Weimar database
+
+**Plan:**
+1. Research MusicXML format and structure
+2. Create MusicXML parser module
+3. Implement basic parsing functionality for notes, chords, and timing
+4. Add CLI option to import MusicXML files
+5. Test with sample MusicXML files from Weimar database
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Created MusicXMLParser class with music21 integration
+- Implemented parse_file() method to extract notes and chords from MusicXML
+- Added NoteData and ChordData dataclasses for structured data representation
+- Created export_to_text() method for formatted output
+- Added "Import MusicXML File" option to CLI menu
+- Implemented import_musicxml_file() method with file validation
+- Added error handling for missing music21 dependency
+- Created output directory structure for parsed files
+
+**Research Findings:**
+- music21 is the best Python library for MusicXML parsing
+- Weimar database contains MIDI files, not MusicXML (need conversion if needed)
+- MusicXML structure includes notes, chords, timing, and pitch information
+
+**Feature Branch:** `notation/phase2-symbolic-input/step1-musicxml-import/task1-parser`
