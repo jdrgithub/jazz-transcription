@@ -8,6 +8,7 @@ import os
 import sqlite3
 from typing import List, Optional
 from notation.data_access.weimar_jazz_client import WeimarJazzClient
+from notation.importers.musicxml_parser import MusicXMLParser
 
 
 class JazzAnalysisCLI:
@@ -17,6 +18,7 @@ class JazzAnalysisCLI:
         """Initialize the CLI."""
         self.running = True
         self.weimar_client = WeimarJazzClient()
+        self.musicxml_parser = MusicXMLParser()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -26,7 +28,8 @@ class JazzAnalysisCLI:
         print("2. Browse Available Solos")
         print("3. Select Solo for Analysis")
         print("4. Extract Solo Data")
-        print("5. Exit")
+        print("5. Import MusicXML File")
+        print("6. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -44,6 +47,8 @@ class JazzAnalysisCLI:
         elif choice == "4":
             self.extract_solo_data()
         elif choice == "5":
+            self.import_musicxml_file()
+        elif choice == "6":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -296,6 +301,50 @@ class JazzAnalysisCLI:
             print(f"Database error: {e}")
         except Exception as e:
             print(f"Error extracting solo data: {e}")
+    
+    def import_musicxml_file(self) -> None:
+        """Import and parse a MusicXML file."""
+        file_path = input("Enter path to MusicXML file: ").strip()
+        
+        if not file_path:
+            print("No file path provided.")
+            return
+        
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+        
+        if not file_path.lower().endswith(('.xml', '.musicxml')):
+            print("File must be a MusicXML file (.xml or .musicxml)")
+            return
+        
+        try:
+            print(f"Parsing MusicXML file: {file_path}")
+            
+            # Parse the MusicXML file
+            notes, chords = self.musicxml_parser.parse_file(file_path)
+            
+            print(f"Successfully parsed {len(notes)} notes and {len(chords)} chords")
+            
+            # Create output directory
+            output_dir = "parsed_musicxml"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            # Generate output filename
+            base_name = os.path.splitext(os.path.basename(file_path))[0]
+            output_path = os.path.join(output_dir, f"{base_name}_parsed.txt")
+            
+            # Export parsed data
+            self.musicxml_parser.export_to_text(notes, chords, output_path)
+            
+            print(f"Parsed data exported to: {output_path}")
+            
+        except ImportError as e:
+            print(f"Error: {e}")
+            print("Please install music21: pip install music21")
+        except Exception as e:
+            print(f"Error parsing MusicXML file: {e}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
