@@ -9,6 +9,7 @@ import sqlite3
 from typing import List, Optional
 from notation.data_access.weimar_jazz_client import WeimarJazzClient
 from notation.importers.musicxml_parser import MusicXMLParser
+from notation.importers.notation_parser import StandardNotationParser
 
 
 class JazzAnalysisCLI:
@@ -19,6 +20,7 @@ class JazzAnalysisCLI:
         self.running = True
         self.weimar_client = WeimarJazzClient()
         self.musicxml_parser = MusicXMLParser()
+        self.notation_parser = StandardNotationParser()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -29,7 +31,8 @@ class JazzAnalysisCLI:
         print("3. Select Solo for Analysis")
         print("4. Extract Solo Data")
         print("5. Import MusicXML File")
-        print("6. Exit")
+        print("6. Import Standard Notation")
+        print("7. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -49,6 +52,8 @@ class JazzAnalysisCLI:
         elif choice == "5":
             self.import_musicxml_file()
         elif choice == "6":
+            self.import_standard_notation()
+        elif choice == "7":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -345,6 +350,65 @@ class JazzAnalysisCLI:
             print("Please install music21: pip install music21")
         except Exception as e:
             print(f"Error parsing MusicXML file: {e}")
+    
+    def import_standard_notation(self) -> None:
+        """Import and parse standard notation files."""
+        file_path = input("Enter path to notation file (PDF, PNG, JPG, etc.): ").strip()
+        
+        if not file_path:
+            print("No file path provided.")
+            return
+        
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+        
+        # Check file extension
+        supported_extensions = ['.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp']
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        if file_ext not in supported_extensions:
+            print(f"Unsupported file format: {file_ext}")
+            print(f"Supported formats: {', '.join(supported_extensions)}")
+            return
+        
+        try:
+            print(f"Parsing notation file: {file_path}")
+            
+            # Parse the notation file
+            notation_data = self.notation_parser.parse_file(file_path)
+            
+            print(f"Successfully parsed notation data:")
+            print(f"  - Notes: {len(notation_data.notes)}")
+            print(f"  - Chords: {len(notation_data.chords)}")
+            if notation_data.key_signature:
+                print(f"  - Key: {notation_data.key_signature}")
+            if notation_data.time_signature:
+                print(f"  - Time: {notation_data.time_signature}")
+            if notation_data.tempo:
+                print(f"  - Tempo: {notation_data.tempo} BPM")
+            
+            # Create output directory
+            output_dir = "parsed_notation"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            # Generate output filename
+            base_name = os.path.splitext(os.path.basename(file_path))[0]
+            output_path = os.path.join(output_dir, f"{base_name}_parsed.txt")
+            
+            # Export parsed data
+            self.notation_parser.export_to_text(notation_data, output_path)
+            
+            print(f"Parsed data exported to: {output_path}")
+            
+        except ImportError as e:
+            print(f"Error: {e}")
+            print("Please install required dependencies:")
+            print("  - For PDF: pip install PyMuPDF")
+            print("  - For images: pip install Pillow pytesseract")
+        except Exception as e:
+            print(f"Error parsing notation file: {e}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
