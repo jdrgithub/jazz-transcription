@@ -13,5 +13,10 @@ pydub>=0.25.1
 soundfile>=0.10.0
 mutagen>=1.45.0
 
+# PDF and image processing
+PyMuPDF>=1.23.0
+Pillow>=9.0.0
+pytesseract>=0.3.10
+
 # Development
 pytest>=7.0.0
