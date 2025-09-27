@@ -77,6 +77,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - Detect chord arpeggios (minor-6, triads, 7th chords)
 - Pattern matching for arpeggio sequences
 - Identify direction (ascending, descending)
+- **Status:** ✅ Completed
 
 **Step 3.3: Approach Detection**
 - Detect chromatic enclosures, diminished bursts
@@ -119,9 +120,9 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 ## Current Status
 
 **Current Phase:** Phase 3 - Analysis Engine
-**Current Step:** Step 3.2 - Arpeggio Detection
-**Current Task:** Task 1 - Arpeggio Pattern Matching
-**Feature Branch:** `notation/phase3-analysis-engine/step2-arpeggio-detection/task1-pattern-matching`
+**Current Step:** Step 3.3 - Approach Detection
+**Current Task:** Task 1 - Approach Tone Pattern Matching
+**Feature Branch:** `notation/phase3-analysis-engine/step3-approach-detection/task1-pattern-matching`
 
 ## Success Criteria
 

@@ -12,6 +12,7 @@ from notation.importers.musicxml_parser import MusicXMLParser
 from notation.importers.notation_parser import StandardNotationParser
 from notation.analysis.scale_detector import JazzScaleDetector
 from notation.analysis.arpeggio_detector import JazzArpeggioDetector
+from notation.analysis.approach_detector import JazzApproachDetector
 
 
 class JazzAnalysisCLI:
@@ -25,6 +26,7 @@ class JazzAnalysisCLI:
         self.notation_parser = StandardNotationParser()
         self.scale_detector = JazzScaleDetector()
         self.arpeggio_detector = JazzArpeggioDetector()
+        self.approach_detector = JazzApproachDetector()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -38,7 +40,8 @@ class JazzAnalysisCLI:
         print("6. Import Standard Notation")
         print("7. Analyze Jazz Scales")
         print("8. Analyze Jazz Arpeggios")
-        print("9. Exit")
+        print("9. Analyze Approach Tones")
+        print("10. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -64,6 +67,8 @@ class JazzAnalysisCLI:
         elif choice == "8":
             self.analyze_jazz_arpeggios()
         elif choice == "9":
+            self.analyze_approach_tones()
+        elif choice == "10":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -663,6 +668,173 @@ class JazzAnalysisCLI:
             time_range = f"{arpeggio.start_time:.1f}-{arpeggio.end_time:.1f}"
             print(f"{arpeggio.name:<25} {arpeggio.direction:<12} "
                   f"{arpeggio.confidence:<12.2f} {time_range:<15}")
+    
+    def analyze_approach_tones(self) -> None:
+        """Analyze approach tones in extracted or imported solo data."""
+        print("\nJazz Approach Tone Analysis")
+        print("=" * 20)
+        print("1. Analyze extracted Weimar solo data")
+        print("2. Analyze imported MusicXML data")
+        print("3. Analyze imported notation data")
+        print("4. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._analyze_weimar_approach_tones()
+        elif choice == "2":
+            self._analyze_musicxml_approach_tones()
+        elif choice == "3":
+            self._analyze_notation_approach_tones()
+        elif choice == "4":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _analyze_weimar_approach_tones(self) -> None:
+        """Analyze approach tones in Weimar database solo data."""
+        solo_id = input("Enter solo ID to analyze: ").strip()
+        
+        if not solo_id:
+            print("No solo ID provided.")
+            return
+        
+        db_path = "data/weimar_jazz_database.db"
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Get melody notes data
+            cursor.execute("""
+                SELECT onset, pitch, duration, velocity
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+            
+            notes_data = cursor.fetchall()
+            if not notes_data:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+            
+            # Convert to our format
+            notes = []
+            for onset, pitch, duration, velocity in notes_data:
+                notes.append({
+                    'onset': onset,
+                    'pitch': pitch,
+                    'duration': duration,
+                    'velocity': velocity
+                })
+            
+            print(f"Analyzing {len(notes)} notes for jazz approach tones...")
+            
+            # Get chord progression for context (if available)
+            cursor.execute("""
+                SELECT chordchanges
+                FROM solo_info
+                WHERE melid = ?
+            """, (solo_id,))
+            
+            chord_result = cursor.fetchone()
+            chord_progression = None
+            if chord_result and chord_result[0]:
+                # Parse chord changes for context
+                chord_progression = self._parse_chord_changes(chord_result[0])
+            
+            # Perform approach tone analysis
+            analysis = self.approach_detector.analyze_notes(notes, chord_progression)
+            
+            # Display results
+            self._display_approach_analysis(analysis)
+            
+            # Export results
+            output_dir = "approach_analysis"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            output_path = os.path.join(output_dir, f"solo_{solo_id}_approach_analysis.txt")
+            self.approach_detector.export_analysis(analysis, output_path)
+            print(f"Analysis exported to: {output_path}")
+            
+            conn.close()
+            
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error analyzing approach tones: {e}")
+    
+    def _parse_chord_changes(self, chord_changes: str) -> List[Tuple[str, float]]:
+        """Parse chord changes string into chord progression."""
+        # Simplified chord progression parsing
+        # In a full implementation, this would parse the chord changes more accurately
+        
+        if not chord_changes:
+            return []
+        
+        # Split by bars and create basic chord progression
+        bars = chord_changes.replace('||', '|').split('|')
+        bars = [bar.strip() for bar in bars if bar.strip()]
+        
+        chord_progression = []
+        current_time = 0.0
+        
+        for bar in bars:
+            # Skip section labels
+            if ':' in bar and any(section in bar for section in ['A1:', 'A2:', 'A3:', 'B1:', 'B2:']):
+                continue
+            
+            # Split bar into chords (simplified)
+            chords = [chord.strip() for chord in bar.split() if chord.strip()]
+            
+            for chord in chords:
+                chord_progression.append((chord, current_time))
+                current_time += 1.0  # Assume 1 beat per chord
+        
+        return chord_progression
+    
+    def _analyze_musicxml_approach_tones(self) -> None:
+        """Analyze approach tones in imported MusicXML data."""
+        print("MusicXML approach tone analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _analyze_notation_approach_tones(self) -> None:
+        """Analyze approach tones in imported notation data."""
+        print("Notation approach tone analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _display_approach_analysis(self, analysis) -> None:
+        """Display approach tone analysis results."""
+        print(f"\nApproach Tone Analysis Results:")
+        print(f"=" * 30)
+        
+        print(f"Approach Coverage: {analysis.approach_coverage:.1f}% of notes")
+        
+        if analysis.most_common_patterns:
+            print(f"\nMost Common Approach Patterns:")
+            for pattern_name, count in analysis.most_common_patterns:
+                print(f"  {pattern_name}: {count} occurrences")
+        
+        if analysis.target_notes:
+            print(f"\nMost Targeted Notes:")
+            for target_pitch, frequency in analysis.target_notes[:5]:  # Show top 5
+                from music21 import pitch
+                note_name = pitch.Pitch(target_pitch).name
+                print(f"  {note_name}: {frequency} times")
+        
+        print(f"\nDetected Approach Patterns ({len(analysis.detected_patterns)} total):")
+        print(f"{'Pattern':<25} {'Type':<12} {'Direction':<10} {'Confidence':<12} {'Time Range':<15}")
+        print(f"{'-' * 80}")
+        
+        for pattern in analysis.detected_patterns[:10]:  # Show top 10
+            time_range = f"{pattern.start_time:.1f}-{pattern.end_time:.1f}"
+            print(f"{pattern.name:<25} {pattern.pattern_type:<12} {pattern.direction:<10} "
+                  f"{pattern.confidence:<12.2f} {time_range:<15}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
