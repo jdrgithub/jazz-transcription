@@ -332,3 +332,40 @@
 - Scale coverage metrics help assess analysis quality
 
 **Feature Branch:** `notation/phase3-analysis-engine/step1-scale-detection/task1-pattern-matching`
+
+## Phase 3.2: Arpeggio Detection - Task 1
+
+**Date:** Starting now
+
+**Goal:** Create arpeggio detection engine for chord pattern analysis
+
+**Plan:**
+1. Research jazz arpeggio patterns and chord structures
+2. Create arpeggio detection module with pattern matching
+3. Implement detection for common jazz arpeggios (triads, 7th chords, extensions)
+4. Add CLI option to analyze arpeggios in imported data
+5. Test with sample jazz solo data
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Created JazzArpeggioDetector class with comprehensive jazz chord database
+- Implemented arpeggio pattern matching with sequence analysis
+- Added detection for 25+ jazz chord types (triads, 7th chords, extensions, altered chords)
+- Created ArpeggioPattern and ArpeggioAnalysis dataclasses for structured results
+- Implemented confidence scoring and duplicate removal
+- Added chord progression analysis with time windowing
+- Created arpeggio direction detection (ascending, descending, mixed)
+- Added octave span calculation for arpeggio analysis
+- Added "Analyze Jazz Arpeggios" option to CLI menu
+- Implemented Weimar database arpeggio analysis with detailed results display
+- Created export functionality for analysis results
+- Added comprehensive error handling and logging
+
+**Research Findings:**
+- Jazz arpeggios require sequence analysis with temporal constraints
+- Chord progression analysis benefits from time windowing approach
+- Direction and octave span provide important musical context
+- Pattern matching requires confidence scoring for accuracy
+
+**Feature Branch:** `notation/phase3-analysis-engine/step2-arpeggio-detection/task1-pattern-matching`
