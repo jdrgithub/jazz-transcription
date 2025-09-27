@@ -369,3 +369,40 @@
 - Pattern matching requires confidence scoring for accuracy
 
 **Feature Branch:** `notation/phase3-analysis-engine/step2-arpeggio-detection/task1-pattern-matching`
+
+## Phase 3.3: Approach Detection - Task 1
+
+**Date:** Starting now
+
+**Goal:** Create approach tone detection engine for chromatic and neighbor tone analysis
+
+**Plan:**
+1. Research jazz approach tone patterns (chromatic enclosures, neighbor tones, passing tones)
+2. Create approach tone detection module with pattern matching
+3. Implement detection for common approach patterns (enclosures, diminished bursts, etc.)
+4. Add CLI option to analyze approach tones in imported data
+5. Test with sample jazz solo data
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Created JazzApproachDetector class with comprehensive approach tone pattern database
+- Implemented approach tone pattern matching with target note identification
+- Added detection for 10+ approach patterns (chromatic, diatonic, enclosures, diminished, bebop)
+- Created ApproachPattern and ApproachAnalysis dataclasses for structured results
+- Implemented confidence scoring and resolution strength calculation
+- Added target note identification using strong beats, chord tones, and long notes
+- Created approach direction detection (above, below, mixed)
+- Added chord progression context for enhanced analysis
+- Added "Analyze Approach Tones" option to CLI menu
+- Implemented Weimar database approach tone analysis with detailed results display
+- Created export functionality for analysis results
+- Added comprehensive error handling and logging
+
+**Research Findings:**
+- Approach tones require target note identification and temporal analysis
+- Chord progression context significantly improves analysis accuracy
+- Resolution strength provides important musical insight
+- Pattern matching requires confidence scoring for accuracy
+
+**Feature Branch:** `notation/phase3-analysis-engine/step3-approach-detection/task1-pattern-matching`
