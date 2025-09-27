@@ -296,3 +296,39 @@
 - Standard notation parsing is complex and requires multiple approaches
 
 **Feature Branch:** `notation/phase2-symbolic-input/step2-notation-import/task1-parser`
+
+## Phase 3.1: Scale Detection - Task 1
+
+**Date:** Starting now
+
+**Goal:** Create scale detection engine for jazz pattern analysis
+
+**Plan:**
+1. Research jazz scale patterns and formulas
+2. Create scale detection module with pattern matching
+3. Implement detection for common jazz scales (harmonic minor, diminished, etc.)
+4. Add CLI option to analyze scales in imported data
+5. Test with sample jazz solo data
+
+**Status:** ✅ Completed
+
+**Completed:**
+- Created JazzScaleDetector class with comprehensive jazz scale database
+- Implemented scale pattern matching with sliding window analysis
+- Added detection for 20+ jazz scales (major modes, minor scales, diminished, bebop, pentatonic, etc.)
+- Created ScalePattern and ScaleAnalysis dataclasses for structured results
+- Implemented confidence scoring and duplicate removal
+- Added key signature detection using music21's Krumhansl-Schmuckler algorithm
+- Created scale coverage calculation and statistics
+- Added "Analyze Jazz Scales" option to CLI menu
+- Implemented Weimar database scale analysis with detailed results display
+- Created export functionality for analysis results
+- Added comprehensive error handling and logging
+
+**Research Findings:**
+- music21 provides excellent key analysis using Krumhansl-Schmuckler algorithm
+- Jazz scales require pattern matching with confidence scoring
+- Sliding window analysis provides better temporal resolution
+- Scale coverage metrics help assess analysis quality
+
+**Feature Branch:** `notation/phase3-analysis-engine/step1-scale-detection/task1-pattern-matching`
