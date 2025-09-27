@@ -10,6 +10,7 @@ from typing import List, Optional
 from notation.data_access.weimar_jazz_client import WeimarJazzClient
 from notation.importers.musicxml_parser import MusicXMLParser
 from notation.importers.notation_parser import StandardNotationParser
+from notation.analysis.scale_detector import JazzScaleDetector
 
 
 class JazzAnalysisCLI:
@@ -21,6 +22,7 @@ class JazzAnalysisCLI:
         self.weimar_client = WeimarJazzClient()
         self.musicxml_parser = MusicXMLParser()
         self.notation_parser = StandardNotationParser()
+        self.scale_detector = JazzScaleDetector()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -32,7 +34,8 @@ class JazzAnalysisCLI:
         print("4. Extract Solo Data")
         print("5. Import MusicXML File")
         print("6. Import Standard Notation")
-        print("7. Exit")
+        print("7. Analyze Jazz Scales")
+        print("8. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -54,6 +57,8 @@ class JazzAnalysisCLI:
         elif choice == "6":
             self.import_standard_notation()
         elif choice == "7":
+            self.analyze_jazz_scales()
+        elif choice == "8":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -409,6 +414,127 @@ class JazzAnalysisCLI:
             print("  - For images: pip install Pillow pytesseract")
         except Exception as e:
             print(f"Error parsing notation file: {e}")
+    
+    def analyze_jazz_scales(self) -> None:
+        """Analyze jazz scales in extracted or imported solo data."""
+        print("\nJazz Scale Analysis")
+        print("=" * 20)
+        print("1. Analyze extracted Weimar solo data")
+        print("2. Analyze imported MusicXML data")
+        print("3. Analyze imported notation data")
+        print("4. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._analyze_weimar_data()
+        elif choice == "2":
+            self._analyze_musicxml_data()
+        elif choice == "3":
+            self._analyze_notation_data()
+        elif choice == "4":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _analyze_weimar_data(self) -> None:
+        """Analyze scales in Weimar database solo data."""
+        solo_id = input("Enter solo ID to analyze: ").strip()
+        
+        if not solo_id:
+            print("No solo ID provided.")
+            return
+        
+        db_path = "data/weimar_jazz_database.db"
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Get melody notes data
+            cursor.execute("""
+                SELECT onset, pitch, duration, velocity
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+            
+            notes_data = cursor.fetchall()
+            if not notes_data:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+            
+            # Convert to our format
+            notes = []
+            for onset, pitch, duration, velocity in notes_data:
+                notes.append({
+                    'onset': onset,
+                    'pitch': pitch,
+                    'duration': duration,
+                    'velocity': velocity
+                })
+            
+            print(f"Analyzing {len(notes)} notes for jazz scales...")
+            
+            # Perform scale analysis
+            analysis = self.scale_detector.analyze_notes(notes)
+            
+            # Display results
+            self._display_scale_analysis(analysis)
+            
+            # Export results
+            output_dir = "scale_analysis"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            output_path = os.path.join(output_dir, f"solo_{solo_id}_scale_analysis.txt")
+            self.scale_detector.export_analysis(analysis, output_path)
+            print(f"Analysis exported to: {output_path}")
+            
+            conn.close()
+            
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error analyzing scales: {e}")
+    
+    def _analyze_musicxml_data(self) -> None:
+        """Analyze scales in imported MusicXML data."""
+        print("MusicXML scale analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _analyze_notation_data(self) -> None:
+        """Analyze scales in imported notation data."""
+        print("Notation scale analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _display_scale_analysis(self, analysis) -> None:
+        """Display scale analysis results."""
+        print(f"\nScale Analysis Results:")
+        print(f"=" * 30)
+        
+        if analysis.key_signature:
+            print(f"Overall Key: {analysis.key_signature}")
+        
+        print(f"Scale Coverage: {analysis.scale_coverage:.1f}% of notes")
+        
+        if analysis.most_common_scales:
+            print(f"\nMost Common Scales:")
+            for scale_name, count in analysis.most_common_scales:
+                print(f"  {scale_name}: {count} occurrences")
+        
+        print(f"\nDetected Scale Patterns ({len(analysis.detected_scales)} total):")
+        print(f"{'Scale':<20} {'Root':<6} {'Confidence':<12} {'Time Range':<15}")
+        print(f"{'-' * 60}")
+        
+        for scale_pattern in analysis.detected_scales[:10]:  # Show top 10
+            time_range = f"{scale_pattern.start_time:.1f}-{scale_pattern.end_time:.1f}"
+            print(f"{scale_pattern.name:<20} {scale_pattern.root:<6} "
+                  f"{scale_pattern.confidence:<12.2f} {time_range:<15}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
