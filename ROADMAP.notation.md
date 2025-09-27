@@ -71,6 +71,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - Detect common jazz scales (harmonic minor, diminished, etc.)
 - Pattern matching against scale formulas
 - Generate plain English descriptions
+- **Status:** ✅ Completed
 
 **Step 3.2: Arpeggio Detection**
 - Detect chord arpeggios (minor-6, triads, 7th chords)
@@ -118,9 +119,9 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 ## Current Status
 
 **Current Phase:** Phase 3 - Analysis Engine
-**Current Step:** Step 3.1 - Scale Detection
-**Current Task:** Task 1 - Scale Pattern Matching
-**Feature Branch:** `notation/phase3-analysis-engine/step1-scale-detection/task1-pattern-matching`
+**Current Step:** Step 3.2 - Arpeggio Detection
+**Current Task:** Task 1 - Arpeggio Pattern Matching
+**Feature Branch:** `notation/phase3-analysis-engine/step2-arpeggio-detection/task1-pattern-matching`
 
 ## Success Criteria
 

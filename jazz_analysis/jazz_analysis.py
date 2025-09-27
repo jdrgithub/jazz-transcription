@@ -11,6 +11,7 @@ from notation.data_access.weimar_jazz_client import WeimarJazzClient
 from notation.importers.musicxml_parser import MusicXMLParser
 from notation.importers.notation_parser import StandardNotationParser
 from notation.analysis.scale_detector import JazzScaleDetector
+from notation.analysis.arpeggio_detector import JazzArpeggioDetector
 
 
 class JazzAnalysisCLI:
@@ -23,6 +24,7 @@ class JazzAnalysisCLI:
         self.musicxml_parser = MusicXMLParser()
         self.notation_parser = StandardNotationParser()
         self.scale_detector = JazzScaleDetector()
+        self.arpeggio_detector = JazzArpeggioDetector()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -35,7 +37,8 @@ class JazzAnalysisCLI:
         print("5. Import MusicXML File")
         print("6. Import Standard Notation")
         print("7. Analyze Jazz Scales")
-        print("8. Exit")
+        print("8. Analyze Jazz Arpeggios")
+        print("9. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -59,6 +62,8 @@ class JazzAnalysisCLI:
         elif choice == "7":
             self.analyze_jazz_scales()
         elif choice == "8":
+            self.analyze_jazz_arpeggios()
+        elif choice == "9":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -535,6 +540,129 @@ class JazzAnalysisCLI:
             time_range = f"{scale_pattern.start_time:.1f}-{scale_pattern.end_time:.1f}"
             print(f"{scale_pattern.name:<20} {scale_pattern.root:<6} "
                   f"{scale_pattern.confidence:<12.2f} {time_range:<15}")
+    
+    def analyze_jazz_arpeggios(self) -> None:
+        """Analyze jazz arpeggios in extracted or imported solo data."""
+        print("\nJazz Arpeggio Analysis")
+        print("=" * 20)
+        print("1. Analyze extracted Weimar solo data")
+        print("2. Analyze imported MusicXML data")
+        print("3. Analyze imported notation data")
+        print("4. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._analyze_weimar_arpeggios()
+        elif choice == "2":
+            self._analyze_musicxml_arpeggios()
+        elif choice == "3":
+            self._analyze_notation_arpeggios()
+        elif choice == "4":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _analyze_weimar_arpeggios(self) -> None:
+        """Analyze arpeggios in Weimar database solo data."""
+        solo_id = input("Enter solo ID to analyze: ").strip()
+        
+        if not solo_id:
+            print("No solo ID provided.")
+            return
+        
+        db_path = "data/weimar_jazz_database.db"
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Get melody notes data
+            cursor.execute("""
+                SELECT onset, pitch, duration, velocity
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+            
+            notes_data = cursor.fetchall()
+            if not notes_data:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+            
+            # Convert to our format
+            notes = []
+            for onset, pitch, duration, velocity in notes_data:
+                notes.append({
+                    'onset': onset,
+                    'pitch': pitch,
+                    'duration': duration,
+                    'velocity': velocity
+                })
+            
+            print(f"Analyzing {len(notes)} notes for jazz arpeggios...")
+            
+            # Perform arpeggio analysis
+            analysis = self.arpeggio_detector.analyze_notes(notes)
+            
+            # Display results
+            self._display_arpeggio_analysis(analysis)
+            
+            # Export results
+            output_dir = "arpeggio_analysis"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            output_path = os.path.join(output_dir, f"solo_{solo_id}_arpeggio_analysis.txt")
+            self.arpeggio_detector.export_analysis(analysis, output_path)
+            print(f"Analysis exported to: {output_path}")
+            
+            conn.close()
+            
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error analyzing arpeggios: {e}")
+    
+    def _analyze_musicxml_arpeggios(self) -> None:
+        """Analyze arpeggios in imported MusicXML data."""
+        print("MusicXML arpeggio analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _analyze_notation_arpeggios(self) -> None:
+        """Analyze arpeggios in imported notation data."""
+        print("Notation arpeggio analysis not yet implemented.")
+        print("Please use the Weimar database analysis for now.")
+    
+    def _display_arpeggio_analysis(self, analysis) -> None:
+        """Display arpeggio analysis results."""
+        print(f"\nArpeggio Analysis Results:")
+        print(f"=" * 30)
+        
+        print(f"Arpeggio Coverage: {analysis.arpeggio_coverage:.1f}% of notes")
+        
+        if analysis.most_common_arpeggios:
+            print(f"\nMost Common Arpeggios:")
+            for arpeggio_name, count in analysis.most_common_arpeggios:
+                print(f"  {arpeggio_name}: {count} occurrences")
+        
+        if analysis.chord_progression:
+            print(f"\nChord Progression:")
+            for chord_name, time in analysis.chord_progression[:10]:  # Show first 10
+                print(f"  {time:.2f}: {chord_name}")
+        
+        print(f"\nDetected Arpeggio Patterns ({len(analysis.detected_arpeggios)} total):")
+        print(f"{'Arpeggio':<25} {'Direction':<12} {'Confidence':<12} {'Time Range':<15}")
+        print(f"{'-' * 70}")
+        
+        for arpeggio in analysis.detected_arpeggios[:10]:  # Show top 10
+            time_range = f"{arpeggio.start_time:.1f}-{arpeggio.end_time:.1f}"
+            print(f"{arpeggio.name:<25} {arpeggio.direction:<12} "
+                  f"{arpeggio.confidence:<12.2f} {time_range:<15}")
     
     def run(self) -> None:
         """Run the main CLI loop."""
