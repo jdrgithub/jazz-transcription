@@ -16,6 +16,7 @@ from notation.analysis.approach_detector import JazzApproachDetector
 from notation.analysis.summary_generator import JazzAnalysisSummaryGenerator
 from notation.analysis.text_formatter import JazzAnalysisTextFormatter
 from notation.database.local_solo_database import LocalSoloDatabase, SoloRecord
+from notation.data_access.public_domain_client import PublicDomainClient, PublicDomainTranscription
 
 
 class JazzAnalysisCLI:
@@ -33,6 +34,7 @@ class JazzAnalysisCLI:
         self.summary_generator = JazzAnalysisSummaryGenerator()
         self.text_formatter = JazzAnalysisTextFormatter()
         self.local_database = LocalSoloDatabase()
+        self.public_domain_client = PublicDomainClient()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -50,7 +52,8 @@ class JazzAnalysisCLI:
         print("10. Generate Analysis Summary")
         print("11. Generate Formatted Report")
         print("12. Manage Local Solo Library")
-        print("13. Exit")
+        print("13. Public Domain Transcriptions")
+        print("14. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -84,6 +87,8 @@ class JazzAnalysisCLI:
         elif choice == "12":
             self.manage_local_solo_library()
         elif choice == "13":
+            self.manage_public_domain_transcriptions()
+        elif choice == "14":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -1393,6 +1398,223 @@ class JazzAnalysisCLI:
             print(f"Successfully imported {imported_count} solos.")
         except Exception as e:
             print(f"Error importing library data: {e}")
+    
+    def manage_public_domain_transcriptions(self) -> None:
+        """Manage public domain jazz transcriptions."""
+        print("\nPublic Domain Transcriptions")
+        print("=" * 35)
+        print("1. Search public domain transcriptions")
+        print("2. View downloaded transcriptions")
+        print("3. Download transcription")
+        print("4. Delete downloaded transcription")
+        print("5. View available sources")
+        print("6. View cache statistics")
+        print("7. Analyze downloaded transcription")
+        print("8. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._search_public_domain_transcriptions()
+        elif choice == "2":
+            self._view_downloaded_transcriptions()
+        elif choice == "3":
+            self._download_transcription()
+        elif choice == "4":
+            self._delete_downloaded_transcription()
+        elif choice == "5":
+            self._view_available_sources()
+        elif choice == "6":
+            self._view_cache_statistics()
+        elif choice == "7":
+            self._analyze_downloaded_transcription()
+        elif choice == "8":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _search_public_domain_transcriptions(self) -> None:
+        """Search for public domain transcriptions."""
+        print("\nSearch Public Domain Transcriptions")
+        print("-" * 35)
+        
+        query = input("Enter search query (e.g., 'jazz', 'bebop', 'charlie parker'): ").strip()
+        if not query:
+            print("No search query provided.")
+            return
+        
+        source = input("Source (imslp/mutopia/cpdl, optional): ").strip() or None
+        genre = input("Genre (optional): ").strip() or None
+        difficulty = input("Difficulty (Beginner/Intermediate/Advanced/Expert, optional): ").strip() or None
+        
+        try:
+            print(f"Searching for '{query}'...")
+            transcriptions = self.public_domain_client.search_transcriptions(
+                query=query,
+                source=source,
+                genre=genre,
+                difficulty=difficulty,
+                limit=10
+            )
+            
+            if not transcriptions:
+                print("No transcriptions found matching your criteria.")
+                return
+            
+            print(f"\nSearch Results ({len(transcriptions)} found)")
+            print("=" * 50)
+            print(f"{'ID':<12} {'Title':<25} {'Performer':<20} {'Source':<8} {'Format':<8} {'Difficulty':<10}")
+            print("-" * 85)
+            
+            for transcription in transcriptions:
+                print(f"{transcription.id:<12} {transcription.title[:24]:<25} "
+                      f"{transcription.performer[:19]:<20} {transcription.source:<8} "
+                      f"{transcription.file_format:<8} {transcription.difficulty_level:<10}")
+            
+            print(f"\nUse option 3 to download any of these transcriptions.")
+            
+        except Exception as e:
+            print(f"Error searching transcriptions: {e}")
+    
+    def _view_downloaded_transcriptions(self) -> None:
+        """View downloaded transcriptions."""
+        transcriptions = self.public_domain_client.get_downloaded_transcriptions()
+        
+        if not transcriptions:
+            print("No downloaded transcriptions found.")
+            return
+        
+        print(f"\nDownloaded Transcriptions ({len(transcriptions)} total)")
+        print("=" * 60)
+        print(f"{'ID':<12} {'Title':<25} {'Performer':<20} {'Source':<8} {'Format':<8} {'Downloaded':<12}")
+        print("-" * 90)
+        
+        for transcription in transcriptions:
+            download_date = transcription.download_date.split('T')[0]  # Just the date part
+            print(f"{transcription.id:<12} {transcription.title[:24]:<25} "
+                  f"{transcription.performer[:19]:<20} {transcription.source:<8} "
+                  f"{transcription.file_format:<8} {download_date:<12}")
+    
+    def _download_transcription(self) -> None:
+        """Download a transcription."""
+        transcription_id = input("Enter transcription ID to download: ").strip()
+        
+        if not transcription_id:
+            print("No transcription ID provided.")
+            return
+        
+        # First search for the transcription
+        try:
+            transcriptions = self.public_domain_client.search_transcriptions("", limit=50)
+            transcription = None
+            
+            for t in transcriptions:
+                if t.id == transcription_id:
+                    transcription = t
+                    break
+            
+            if not transcription:
+                print("Transcription not found.")
+                return
+            
+            print(f"Downloading: {transcription.title} by {transcription.performer}")
+            print(f"Source: {transcription.source}")
+            print(f"Format: {transcription.file_format}")
+            
+            if self.public_domain_client.download_transcription(transcription):
+                print("Transcription downloaded successfully!")
+                print(f"File saved to: {transcription.file_path}")
+            else:
+                print("Failed to download transcription.")
+                
+        except Exception as e:
+            print(f"Error downloading transcription: {e}")
+    
+    def _delete_downloaded_transcription(self) -> None:
+        """Delete a downloaded transcription."""
+        transcription_id = input("Enter transcription ID to delete: ").strip()
+        
+        if not transcription_id:
+            print("No transcription ID provided.")
+            return
+        
+        transcription = self.public_domain_client.get_transcription_by_id(transcription_id)
+        if not transcription:
+            print("Transcription not found.")
+            return
+        
+        print(f"Are you sure you want to delete '{transcription.title}' by {transcription.performer}? (y/N)")
+        confirm = input().strip().lower()
+        
+        if confirm == 'y':
+            if self.public_domain_client.delete_transcription(transcription_id):
+                print("Transcription deleted successfully.")
+            else:
+                print("Failed to delete transcription.")
+        else:
+            print("Deletion cancelled.")
+    
+    def _view_available_sources(self) -> None:
+        """View available public domain sources."""
+        sources = self.public_domain_client.get_available_sources()
+        
+        print(f"\nAvailable Public Domain Sources")
+        print("=" * 40)
+        
+        for source_id, source_info in sources.items():
+            print(f"\n{source_info['name']} ({source_id})")
+            print(f"  URL: {source_info['base_url']}")
+            print(f"  Description: {source_info['description']}")
+    
+    def _view_cache_statistics(self) -> None:
+        """View cache statistics."""
+        stats = self.public_domain_client.get_cache_statistics()
+        
+        print(f"\nPublic Domain Cache Statistics")
+        print("=" * 35)
+        print(f"Total Transcriptions: {stats['total_transcriptions']}")
+        print(f"Total Cache Size: {stats['total_size_mb']} MB")
+        
+        if stats['by_source']:
+            print(f"\nBy Source:")
+            for source, count in stats['by_source'].items():
+                print(f"  {source}: {count}")
+        
+        if stats['by_format']:
+            print(f"\nBy Format:")
+            for file_format, count in stats['by_format'].items():
+                print(f"  {file_format}: {count}")
+        
+        if stats['by_difficulty']:
+            print(f"\nBy Difficulty:")
+            for difficulty, count in stats['by_difficulty'].items():
+                print(f"  {difficulty}: {count}")
+    
+    def _analyze_downloaded_transcription(self) -> None:
+        """Analyze a downloaded transcription."""
+        transcription_id = input("Enter transcription ID to analyze: ").strip()
+        
+        if not transcription_id:
+            print("No transcription ID provided.")
+            return
+        
+        transcription = self.public_domain_client.get_transcription_by_id(transcription_id)
+        if not transcription:
+            print("Transcription not found.")
+            return
+        
+        if not transcription.file_path or not os.path.exists(transcription.file_path):
+            print("Transcription file not found.")
+            return
+        
+        print(f"Analyzing: {transcription.title} by {transcription.performer}")
+        print(f"File: {transcription.file_path}")
+        
+        # For now, this is a placeholder - in a full implementation,
+        # this would integrate with the analysis workflow
+        print("This feature requires integration with the analysis workflow.")
+        print("It will be implemented in a future update.")
+        print("For now, you can manually import the file using the MusicXML or notation import options.")
 
 
 def main():
