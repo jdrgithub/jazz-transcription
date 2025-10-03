@@ -15,6 +15,7 @@ from notation.analysis.arpeggio_detector import JazzArpeggioDetector
 from notation.analysis.approach_detector import JazzApproachDetector
 from notation.analysis.summary_generator import JazzAnalysisSummaryGenerator
 from notation.analysis.text_formatter import JazzAnalysisTextFormatter
+from notation.database.local_solo_database import LocalSoloDatabase, SoloRecord
 
 
 class JazzAnalysisCLI:
@@ -31,6 +32,7 @@ class JazzAnalysisCLI:
         self.approach_detector = JazzApproachDetector()
         self.summary_generator = JazzAnalysisSummaryGenerator()
         self.text_formatter = JazzAnalysisTextFormatter()
+        self.local_database = LocalSoloDatabase()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -47,7 +49,8 @@ class JazzAnalysisCLI:
         print("9. Analyze Approach Tones")
         print("10. Generate Analysis Summary")
         print("11. Generate Formatted Report")
-        print("12. Exit")
+        print("12. Manage Local Solo Library")
+        print("13. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -79,6 +82,8 @@ class JazzAnalysisCLI:
         elif choice == "11":
             self.generate_formatted_report()
         elif choice == "12":
+            self.manage_local_solo_library()
+        elif choice == "13":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -1175,6 +1180,219 @@ class JazzAnalysisCLI:
         """Generate formatted report from notation data."""
         print("Notation formatted report generation not yet implemented.")
         print("This feature will be available in a future update.")
+    
+    def manage_local_solo_library(self) -> None:
+        """Manage the local solo library database."""
+        print("\nLocal Solo Library Management")
+        print("=" * 35)
+        print("1. View all stored solos")
+        print("2. Search solos by criteria")
+        print("3. View solo details")
+        print("4. Save analyzed solo to library")
+        print("5. Delete solo from library")
+        print("6. View library statistics")
+        print("7. Export library data")
+        print("8. Import library data")
+        print("9. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._view_all_solos()
+        elif choice == "2":
+            self._search_solos()
+        elif choice == "3":
+            self._view_solo_details()
+        elif choice == "4":
+            self._save_solo_to_library()
+        elif choice == "5":
+            self._delete_solo_from_library()
+        elif choice == "6":
+            self._view_library_statistics()
+        elif choice == "7":
+            self._export_library_data()
+        elif choice == "8":
+            self._import_library_data()
+        elif choice == "9":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _view_all_solos(self) -> None:
+        """View all solos in the local library."""
+        solos = self.local_database.get_all_solos()
+        
+        if not solos:
+            print("No solos found in the local library.")
+            return
+        
+        print(f"\nLocal Solo Library ({len(solos)} solos)")
+        print("=" * 50)
+        print(f"{'ID':<4} {'Title':<25} {'Performer':<20} {'Source':<8} {'Level':<12}")
+        print("-" * 70)
+        
+        for solo in solos:
+            print(f"{solo.id:<4} {solo.title[:24]:<25} {solo.performer[:19]:<20} "
+                  f"{solo.source_type:<8} {solo.technical_level:<12}")
+    
+    def _search_solos(self) -> None:
+        """Search solos by various criteria."""
+        print("\nSearch Solos")
+        print("-" * 15)
+        
+        performer = input("Performer (optional, partial match): ").strip() or None
+        source_type = input("Source type (weimar/musicxml/notation, optional): ").strip() or None
+        technical_level = input("Technical level (optional): ").strip() or None
+        harmonic_sophistication = input("Harmonic sophistication (optional): ").strip() or None
+        
+        solos = self.local_database.search_solos(
+            performer=performer,
+            source_type=source_type,
+            technical_level=technical_level,
+            harmonic_sophistication=harmonic_sophistication
+        )
+        
+        if not solos:
+            print("No solos found matching the criteria.")
+            return
+        
+        print(f"\nSearch Results ({len(solos)} solos)")
+        print("=" * 40)
+        print(f"{'ID':<4} {'Title':<25} {'Performer':<20} {'Source':<8} {'Level':<12}")
+        print("-" * 70)
+        
+        for solo in solos:
+            print(f"{solo.id:<4} {solo.title[:24]:<25} {solo.performer[:19]:<20} "
+                  f"{solo.source_type:<8} {solo.technical_level:<12}")
+    
+    def _view_solo_details(self) -> None:
+        """View detailed information about a specific solo."""
+        solo_id = input("Enter solo ID: ").strip()
+        
+        if not solo_id.isdigit():
+            print("Invalid solo ID.")
+            return
+        
+        solo = self.local_database.get_solo(int(solo_id))
+        if not solo:
+            print("Solo not found.")
+            return
+        
+        print(f"\nSolo Details - ID: {solo.id}")
+        print("=" * 40)
+        print(f"Title: {solo.title}")
+        print(f"Performer: {solo.performer}")
+        print(f"Key: {solo.key_signature}")
+        if solo.tempo:
+            print(f"Tempo: {solo.tempo} BPM")
+        print(f"Source: {solo.source_type} (ID: {solo.source_id})")
+        print(f"Total Notes: {solo.total_notes}")
+        print(f"Analysis Date: {solo.analysis_date}")
+        print(f"Technical Level: {solo.technical_level}")
+        print(f"Harmonic Sophistication: {solo.harmonic_sophistication}")
+        print(f"Overall Character: {solo.overall_character}")
+        print(f"Analysis Coverage:")
+        print(f"  Scales: {solo.scale_coverage:.1f}%")
+        print(f"  Arpeggios: {solo.arpeggio_coverage:.1f}%")
+        print(f"  Approach Tones: {solo.approach_coverage:.1f}%")
+        
+        if solo.formatted_report_path and os.path.exists(solo.formatted_report_path):
+            print(f"Formatted Report: {solo.formatted_report_path}")
+        else:
+            print("Formatted Report: Not available")
+    
+    def _save_solo_to_library(self) -> None:
+        """Save a recently analyzed solo to the local library."""
+        print("\nSave Solo to Library")
+        print("-" * 22)
+        print("This feature will save a solo that was recently analyzed.")
+        print("You need to provide the solo ID from a recent analysis.")
+        
+        # For now, this is a placeholder - in a full implementation,
+        # this would integrate with the analysis workflow to save results
+        print("This feature requires integration with the analysis workflow.")
+        print("It will be implemented in a future update.")
+    
+    def _delete_solo_from_library(self) -> None:
+        """Delete a solo from the local library."""
+        solo_id = input("Enter solo ID to delete: ").strip()
+        
+        if not solo_id.isdigit():
+            print("Invalid solo ID.")
+            return
+        
+        solo = self.local_database.get_solo(int(solo_id))
+        if not solo:
+            print("Solo not found.")
+            return
+        
+        print(f"Are you sure you want to delete '{solo.title}' by {solo.performer}? (y/N)")
+        confirm = input().strip().lower()
+        
+        if confirm == 'y':
+            if self.local_database.delete_solo(int(solo_id)):
+                print("Solo deleted successfully.")
+            else:
+                print("Failed to delete solo.")
+        else:
+            print("Deletion cancelled.")
+    
+    def _view_library_statistics(self) -> None:
+        """View library statistics."""
+        stats = self.local_database.get_statistics()
+        
+        print(f"\nLocal Solo Library Statistics")
+        print("=" * 35)
+        print(f"Total Solos: {stats['total_solos']}")
+        
+        if stats['by_source_type']:
+            print(f"\nBy Source Type:")
+            for source_type, count in stats['by_source_type'].items():
+                print(f"  {source_type}: {count}")
+        
+        if stats['by_technical_level']:
+            print(f"\nBy Technical Level:")
+            for level, count in stats['by_technical_level'].items():
+                print(f"  {level}: {count}")
+        
+        if stats['by_harmonic_sophistication']:
+            print(f"\nBy Harmonic Sophistication:")
+            for sophistication, count in stats['by_harmonic_sophistication'].items():
+                print(f"  {sophistication}: {count}")
+        
+        avg_coverage = stats['average_coverage']
+        print(f"\nAverage Analysis Coverage:")
+        print(f"  Scales: {avg_coverage['scale']:.1f}%")
+        print(f"  Arpeggios: {avg_coverage['arpeggio']:.1f}%")
+        print(f"  Approach Tones: {avg_coverage['approach']:.1f}%")
+    
+    def _export_library_data(self) -> None:
+        """Export library data to a JSON file."""
+        output_path = input("Enter output file path (e.g., library_export.json): ").strip()
+        
+        if not output_path:
+            print("No output path provided.")
+            return
+        
+        try:
+            self.local_database.export_solo_data(output_path)
+            print(f"Library data exported to: {output_path}")
+        except Exception as e:
+            print(f"Error exporting library data: {e}")
+    
+    def _import_library_data(self) -> None:
+        """Import library data from a JSON file."""
+        input_path = input("Enter input file path: ").strip()
+        
+        if not input_path or not os.path.exists(input_path):
+            print("Invalid input file path.")
+            return
+        
+        try:
+            imported_count = self.local_database.import_solo_data(input_path)
+            print(f"Successfully imported {imported_count} solos.")
+        except Exception as e:
+            print(f"Error importing library data: {e}")
 
 
 def main():
