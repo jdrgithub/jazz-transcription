@@ -18,7 +18,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - **Step 3.1: Scale Detection** - Detect jazz scales and patterns
 - **Step 3.2: Arpeggio Detection** - Detect chord arpeggios
 - **Step 3.3: Approach Detection** - Detect approach tones
-- **Step 3.4: Summary Generator** - Generate plain English analysis
+- **Step 3.4: Summary Generator** ✅ - Generate plain English analysis
 - **Step 3.5: Text Output** - Output results in text format
 
 ### Phase 4: Archive Integration
@@ -83,6 +83,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - Detect chromatic enclosures, diminished bursts
 - Identify neighbor tones and passing tones
 - Generate descriptive summaries
+- **Status:** ✅ Completed
 
 **Step 3.4: Summary Generator**
 - Combine results from all detectors
@@ -120,9 +121,9 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 ## Current Status
 
 **Current Phase:** Phase 3 - Analysis Engine
-**Current Step:** Step 3.3 - Approach Detection
-**Current Task:** Task 1 - Approach Tone Pattern Matching
-**Feature Branch:** `notation/phase3-analysis-engine/step3-approach-detection/task1-pattern-matching`
+**Current Step:** Step 3.4 - Summary Generator
+**Current Task:** Task 1 - Analysis Summary Generator
+**Feature Branch:** `notation/phase3-analysis-engine/step4-summary-generator/task1-generator`
 
 ## Success Criteria
 
