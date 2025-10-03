@@ -22,7 +22,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - **Step 3.5: Text Output** ✅ - Output results in text format
 
 ### Phase 4: Archive Integration
-- **Step 4.1: Solo Library** - Create local solo database
+- **Step 4.1: Solo Library** ✅ - Create local solo database
 - **Step 4.2: Public Domain** - Integrate public domain transcriptions
 
 ## Detailed Explanations
