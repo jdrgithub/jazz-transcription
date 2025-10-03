@@ -438,4 +438,38 @@
 11. ✅ Implemented comprehensive text export functionality
 12. ✅ Added proper error handling and database integration
 
-**Current Feature Branch:** `notation/phase3-analysis-engine/step4-summary-generator/task1-generator`
+**Current Feature Branch:** `notation/phase3-analysis-engine/step5-text-output/task1-formatter`
+
+## Phase 3.5: Text Output Generator - Task 1: Text Output Formatter
+
+**Date:** Starting now
+
+**Goal:** Create a text output formatter that generates well-formatted analysis reports with chord changes, analysis findings, and musical insights in a readable text format.
+
+**Tasks:**
+1. Create Text Output Formatter module for generating formatted analysis reports
+2. Implement chord changes formatting with proper alignment and section labels
+3. Create analysis-by-bar mapping and display functionality
+4. Add comprehensive text export functionality
+5. Integrate text formatter into CLI and analysis workflow
+6. Test text output formatting with sample analysis data
+
+**Status:** ✅ Completed
+
+**Feature Branch:** `notation/phase3-analysis-engine/step5-text-output/task1-formatter`
+
+**Completed Items:**
+1. ✅ Created `JazzAnalysisTextFormatter` class in `jazz_analysis/notation/analysis/text_formatter.py`
+2. ✅ Implemented comprehensive text formatting with chord changes, analysis by bar, and musical insights
+3. ✅ Added chord changes formatting with proper alignment and section label handling
+4. ✅ Created analysis-by-bar mapping functionality for scales, arpeggios, and approach tones
+5. ✅ Implemented overall summary generation and technical notes extraction
+6. ✅ Added study recommendations integration
+7. ✅ Integrated text formatter into CLI with new menu option "11. Generate Formatted Report"
+8. ✅ Added `_generate_weimar_formatted_report` method for Weimar database analysis
+9. ✅ Added `display_formatted_report` method for console output
+10. ✅ Added `export_formatted_report` method for text file export
+11. ✅ Added placeholder methods for MusicXML and notation formatted report generation
+12. ✅ Implemented comprehensive error handling and database integration
+
+**Current Feature Branch:** `notation/phase3-analysis-engine/step5-text-output/task1-formatter`

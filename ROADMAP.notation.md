@@ -19,7 +19,7 @@ This roadmap outlines the implementation plan for the notation side of the jazz 
 - **Step 3.2: Arpeggio Detection** - Detect chord arpeggios
 - **Step 3.3: Approach Detection** - Detect approach tones
 - **Step 3.4: Summary Generator** ✅ - Generate plain English analysis
-- **Step 3.5: Text Output** - Output results in text format
+- **Step 3.5: Text Output** ✅ - Output results in text format
 
 ### Phase 4: Archive Integration
 - **Step 4.1: Solo Library** - Create local solo database
