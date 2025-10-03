@@ -14,6 +14,7 @@ from notation.analysis.scale_detector import JazzScaleDetector
 from notation.analysis.arpeggio_detector import JazzArpeggioDetector
 from notation.analysis.approach_detector import JazzApproachDetector
 from notation.analysis.summary_generator import JazzAnalysisSummaryGenerator
+from notation.analysis.text_formatter import JazzAnalysisTextFormatter
 
 
 class JazzAnalysisCLI:
@@ -29,6 +30,7 @@ class JazzAnalysisCLI:
         self.arpeggio_detector = JazzArpeggioDetector()
         self.approach_detector = JazzApproachDetector()
         self.summary_generator = JazzAnalysisSummaryGenerator()
+        self.text_formatter = JazzAnalysisTextFormatter()
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -44,7 +46,8 @@ class JazzAnalysisCLI:
         print("8. Analyze Jazz Arpeggios")
         print("9. Analyze Approach Tones")
         print("10. Generate Analysis Summary")
-        print("11. Exit")
+        print("11. Generate Formatted Report")
+        print("12. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -74,6 +77,8 @@ class JazzAnalysisCLI:
         elif choice == "10":
             self.generate_analysis_summary()
         elif choice == "11":
+            self.generate_formatted_report()
+        elif choice == "12":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -1029,6 +1034,147 @@ class JazzAnalysisCLI:
             print(f"-" * 21)
             for recommendation in summary.recommendations:
                 print(f"• {recommendation}")
+    
+    def generate_formatted_report(self) -> None:
+        """Generate formatted analysis report with chord changes and analysis by bar."""
+        print("\nFormatted Report Generator")
+        print("=" * 30)
+        print("1. Generate formatted report from Weimar solo data")
+        print("2. Generate formatted report from MusicXML data")
+        print("3. Generate formatted report from notation data")
+        print("4. Back to main menu")
+        
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            self._generate_weimar_formatted_report()
+        elif choice == "2":
+            self._generate_musicxml_formatted_report()
+        elif choice == "3":
+            self._generate_notation_formatted_report()
+        elif choice == "4":
+            return
+        else:
+            print("Invalid choice.")
+    
+    def _generate_weimar_formatted_report(self) -> None:
+        """Generate formatted report from Weimar database solo data."""
+        solo_id = input("Enter solo ID to analyze: ").strip()
+        
+        if not solo_id:
+            print("No solo ID provided.")
+            return
+        
+        db_path = "data/weimar_jazz_database.db"
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Get solo metadata
+            cursor.execute("""
+                SELECT si.title, si.performer, si.key, si.avgtempo, si.chordchanges
+                FROM solo_info si
+                WHERE si.melid = ?
+            """, (solo_id,))
+            
+            solo_info = cursor.fetchone()
+            if not solo_info:
+                print("Solo not found in database.")
+                conn.close()
+                return
+            
+            title, performer, key, tempo, chord_changes = solo_info
+            
+            # Get melody notes data
+            cursor.execute("""
+                SELECT onset, pitch, duration, velocity
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+            
+            notes_data = cursor.fetchall()
+            if not notes_data:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+            
+            # Convert to our format
+            notes = []
+            for onset, pitch, duration, velocity in notes_data:
+                notes.append({
+                    'onset': onset,
+                    'pitch': pitch,
+                    'duration': duration,
+                    'velocity': velocity
+                })
+            
+            print(f"Generating formatted report for {len(notes)} notes...")
+            
+            # Perform all analyses
+            print("Analyzing scales...")
+            scale_analysis = self.scale_detector.analyze_notes(notes)
+            
+            print("Analyzing arpeggios...")
+            chord_progression = self._parse_chord_changes(chord_changes) if chord_changes else None
+            arpeggio_analysis = self.arpeggio_detector.analyze_notes(notes, chord_progression)
+            
+            print("Analyzing approach tones...")
+            approach_analysis = self.approach_detector.analyze_notes(notes, chord_progression)
+            
+            # Generate analysis summary
+            print("Generating analysis summary...")
+            solo_metadata = {
+                'title': title or 'Unknown Solo',
+                'performer': performer or 'Unknown Performer',
+                'key': key or 'Unknown Key',
+                'tempo': tempo,
+                'total_notes': len(notes)
+            }
+            
+            analysis_summary = self.summary_generator.generate_summary(
+                scale_analysis, arpeggio_analysis, approach_analysis, solo_metadata
+            )
+            
+            # Format the report
+            print("Formatting analysis report...")
+            formatted_analysis = self.text_formatter.format_analysis_report(
+                analysis_summary, scale_analysis, arpeggio_analysis, approach_analysis,
+                chord_changes or "", solo_metadata
+            )
+            
+            # Display the formatted report
+            self.text_formatter.display_formatted_report(formatted_analysis)
+            
+            # Export the formatted report
+            output_dir = "formatted_reports"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            output_path = os.path.join(output_dir, f"solo_{solo_id}_formatted_report.txt")
+            self.text_formatter.export_formatted_report(formatted_analysis, output_path)
+            print(f"Formatted report exported to: {output_path}")
+            
+            conn.close()
+            
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error generating formatted report: {e}")
+    
+    def _generate_musicxml_formatted_report(self) -> None:
+        """Generate formatted report from MusicXML data."""
+        print("MusicXML formatted report generation not yet implemented.")
+        print("This feature will be available in a future update.")
+    
+    def _generate_notation_formatted_report(self) -> None:
+        """Generate formatted report from notation data."""
+        print("Notation formatted report generation not yet implemented.")
+        print("This feature will be available in a future update.")
 
 
 def main():
