@@ -1,0 +1,51 @@
+JAZZ SOLO ANALYSIS SUMMARY
+==================================================
+
+Solo: Anthropology
+Performer: Art Pepper
+Key: Bb-maj
+Tempo: 218.8 BPM
+Total Notes: 530
+
+ANALYSIS COVERAGE
+--------------------
+Scales: 1.5%
+Arpeggios: 99.2%
+Approach Tones: 50.6%
+
+OVERALL ASSESSMENT
+--------------------
+Character: Sophisticated and complex jazz vocabulary with advanced techniques
+Technical Level: Advanced to Professional
+Harmonic Sophistication: Advanced harmonic sophistication
+
+SCALE ANALYSIS
+---------------
+• Most prominent scale: Chromatic (1572 occurrences)
+• Demonstrates sophisticated scale vocabulary with multiple scale types.
+• Strong jazz vocabulary with 9544 jazz-specific scale patterns.
+
+ARPEGGIO ANALYSIS
+-----------------
+• Most prominent arpeggio: Major 13 (835 occurrences)
+• Demonstrates advanced harmonic vocabulary with extended chord arpeggios.
+• Preference for descending arpeggio patterns.
+
+APPROACH TONE ANALYSIS
+----------------------
+• Most prominent approach: diatonic (183 occurrences)
+• Diverse target note selection with 10 different target notes.
+
+MELODIC CHARACTERISTICS
+-----------------------
+• Scale-based melodic development
+• Arpeggio-based harmonic outlining
+• Approach tone-based melodic embellishment
+• Mixed melodic approach combining multiple techniques
+
+STUDY RECOMMENDATIONS
+---------------------
+• Focus on scale practice to improve melodic vocabulary
+• Study chromatic approach patterns and enclosures
+
+Analysis completed successfully.

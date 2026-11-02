@@ -4,7 +4,7 @@ Standard notation parser for traditional sheet music.
 
 import os
 import logging
-from typing import List, Dict, Optional, Tuple, Union
+from typing import Any, List, Dict, Optional, Tuple, Union
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,6 +14,7 @@ try:
     from music21 import converter, stream, note, chord, duration, pitch
     MUSIC21_AVAILABLE = True
 except ImportError:
+    converter = stream = note = chord = duration = pitch = None  # type: ignore
     MUSIC21_AVAILABLE = False
     logger.warning("music21 not available. Install with: pip install music21")
 
@@ -54,10 +55,6 @@ class StandardNotationParser:
             raise ImportError("music21 is required for notation parsing. Install with: pip install music21")
         
         self.supported_formats = ['.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp']
-        
-        # Initialize metadata
-        if self.metadata is None:
-            self.metadata = {}
     
     def parse_file(self, file_path: str) -> NotationData:
         """
@@ -169,7 +166,7 @@ class StandardNotationParser:
                 metadata={'source': file_path, 'format': 'Unknown', 'error': str(e)}
             )
     
-    def _extract_notes_from_score(self, score: stream.Score) -> List[Dict]:
+    def _extract_notes_from_score(self, score: Any) -> List[Dict]:
         """Extract note data from a music21 score."""
         notes = []
         
@@ -188,7 +185,7 @@ class StandardNotationParser:
         
         return notes
     
-    def _extract_chords_from_score(self, score: stream.Score) -> List[Dict]:
+    def _extract_chords_from_score(self, score: Any) -> List[Dict]:
         """Extract chord data from a music21 score."""
         chords = []
         
@@ -206,7 +203,7 @@ class StandardNotationParser:
         
         return chords
     
-    def _extract_key_signature(self, score: stream.Score) -> Optional[str]:
+    def _extract_key_signature(self, score: Any) -> Optional[str]:
         """Extract key signature from score."""
         for part in score.parts:
             for element in part.flat:
@@ -214,7 +211,7 @@ class StandardNotationParser:
                     return f"{element.sharps} {element.mode}"
         return None
     
-    def _extract_time_signature(self, score: stream.Score) -> Optional[str]:
+    def _extract_time_signature(self, score: Any) -> Optional[str]:
         """Extract time signature from score."""
         for part in score.parts:
             for element in part.flat:
@@ -222,7 +219,7 @@ class StandardNotationParser:
                     return f"{element.numerator}/{element.denominator}"
         return None
     
-    def _extract_tempo(self, score: stream.Score) -> Optional[int]:
+    def _extract_tempo(self, score: Any) -> Optional[int]:
         """Extract tempo from score."""
         for part in score.parts:
             for element in part.flat:
@@ -230,7 +227,7 @@ class StandardNotationParser:
                     return int(element.number)
         return None
     
-    def _extract_clef(self, score: stream.Score) -> Optional[str]:
+    def _extract_clef(self, score: Any) -> Optional[str]:
         """Extract clef information from score."""
         for part in score.parts:
             for element in part.flat:

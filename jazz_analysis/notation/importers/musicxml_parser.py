@@ -3,7 +3,7 @@ MusicXML parser for importing jazz solo notation.
 """
 
 import os
-from typing import List, Dict, Optional, Tuple
+from typing import Any, List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import logging
 
@@ -13,6 +13,7 @@ try:
     from music21 import converter, stream, note, chord, duration, pitch
     MUSIC21_AVAILABLE = True
 except ImportError:
+    converter = stream = note = chord = duration = pitch = None  # type: ignore
     MUSIC21_AVAILABLE = False
     logger.warning("music21 not available. Install with: pip install music21")
 
@@ -77,7 +78,7 @@ class MusicXMLParser:
             logger.error(f"Error parsing MusicXML file {file_path}: {e}")
             raise
     
-    def _extract_notes(self, score: stream.Score) -> List[NoteData]:
+    def _extract_notes(self, score: Any) -> List[NoteData]:
         """Extract note data from the parsed score."""
         notes = []
         
@@ -100,7 +101,7 @@ class MusicXMLParser:
         notes.sort(key=lambda n: n.onset)
         return notes
     
-    def _extract_chords(self, score: stream.Score) -> List[ChordData]:
+    def _extract_chords(self, score: Any) -> List[ChordData]:
         """Extract chord data from the parsed score."""
         chords = []
         
@@ -117,7 +118,7 @@ class MusicXMLParser:
         chords.sort(key=lambda c: c.onset)
         return chords
     
-    def _convert_note(self, note_obj: note.Note, offset: float = None, duration: float = None) -> Optional[NoteData]:
+    def _convert_note(self, note_obj: Any, offset: float = None, duration: float = None) -> Optional[NoteData]:
         """Convert a music21 Note object to our NoteData format."""
         try:
             # Get pitch information
@@ -149,7 +150,7 @@ class MusicXMLParser:
             logger.warning(f"Error converting note: {e}")
             return None
     
-    def _convert_chord(self, chord_obj: chord.Chord) -> Optional[ChordData]:
+    def _convert_chord(self, chord_obj: Any) -> Optional[ChordData]:
         """Convert a music21 Chord object to our ChordData format."""
         try:
             # Get pitch information

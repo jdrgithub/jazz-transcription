@@ -15,6 +15,11 @@ from notation.analysis.arpeggio_detector import JazzArpeggioDetector
 from notation.analysis.approach_detector import JazzApproachDetector
 from notation.analysis.summary_generator import JazzAnalysisSummaryGenerator
 from notation.analysis.text_formatter import JazzAnalysisTextFormatter
+from notation.analysis.openai_client import OpenAIJazzAnalyzer
+from notation.analysis.chord_mapper import (
+    advice_to_payload,
+    build_chord_advice_report,
+)
 from notation.database.local_solo_database import LocalSoloDatabase, SoloRecord
 from notation.data_access.public_domain_client import PublicDomainClient, PublicDomainTranscription
 
@@ -26,15 +31,34 @@ class JazzAnalysisCLI:
         """Initialize the CLI."""
         self.running = True
         self.weimar_client = WeimarJazzClient()
-        self.musicxml_parser = MusicXMLParser()
-        self.notation_parser = StandardNotationParser()
-        self.scale_detector = JazzScaleDetector()
-        self.arpeggio_detector = JazzArpeggioDetector()
-        self.approach_detector = JazzApproachDetector()
+        self.musicxml_parser = self._optional_init(MusicXMLParser, "MusicXML import")
+        self.notation_parser = self._optional_init(StandardNotationParser, "notation import")
+        self.scale_detector = self._optional_init(JazzScaleDetector, "scale analysis")
+        self.arpeggio_detector = self._optional_init(JazzArpeggioDetector, "arpeggio analysis")
+        self.approach_detector = self._optional_init(JazzApproachDetector, "approach analysis")
         self.summary_generator = JazzAnalysisSummaryGenerator()
         self.text_formatter = JazzAnalysisTextFormatter()
+        self.openai_analyzer = OpenAIJazzAnalyzer(
+            fallback_generator=self.summary_generator
+        )
         self.local_database = LocalSoloDatabase()
         self.public_domain_client = PublicDomainClient()
+
+    @staticmethod
+    def _optional_init(factory, feature_name: str):
+        """Construct a dependency, or return None with a warning if unavailable."""
+        try:
+            return factory()
+        except ImportError as exc:
+            print(f"Warning: {feature_name} unavailable ({exc})")
+            return None
+
+    def _require(self, component, feature_name: str) -> bool:
+        """Return True if component is ready; otherwise print install guidance."""
+        if component is not None:
+            return True
+        print(f"{feature_name} requires music21. Install with: pip install music21")
+        return False
     
     def display_menu(self) -> None:
         """Display the main menu options."""
@@ -53,7 +77,8 @@ class JazzAnalysisCLI:
         print("11. Generate Formatted Report")
         print("12. Manage Local Solo Library")
         print("13. Public Domain Transcriptions")
-        print("14. Exit")
+        print("14. Generate AI Analysis Summary (OpenAI)")
+        print("15. Exit")
         print()
     
     def get_user_choice(self) -> str:
@@ -89,6 +114,8 @@ class JazzAnalysisCLI:
         elif choice == "13":
             self.manage_public_domain_transcriptions()
         elif choice == "14":
+            self.generate_ai_analysis_summary()
+        elif choice == "15":
             self.running = False
         else:
             print("Invalid choice. Please try again.")
@@ -122,7 +149,7 @@ class JazzAnalysisCLI:
             cursor = conn.cursor()
             
             # Get basic database info
-            cursor.execute("SELECT COUNT(*) FROM melody")
+            cursor.execute("SELECT COUNT(*) FROM solo_info")
             total_solos = cursor.fetchone()[0]
             
             print(f"\nWeimar Jazz Database contains {total_solos} solos.")
@@ -267,7 +294,7 @@ class JazzAnalysisCLI:
             # Get solo metadata
             cursor.execute("""
                 SELECT si.melid, si.title, si.performer, si.key, si.avgtempo, 
-                       si.instrument, si.style, si.chordchanges
+                       si.instrument, si.style, si.chord_changes
                 FROM solo_info si
                 WHERE si.melid = ?
             """, (solo_id,))
@@ -285,7 +312,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset
@@ -344,6 +371,8 @@ class JazzAnalysisCLI:
     
     def import_musicxml_file(self) -> None:
         """Import and parse a MusicXML file."""
+        if not self._require(self.musicxml_parser, "MusicXML import"):
+            return
         file_path = input("Enter path to MusicXML file: ").strip()
         
         if not file_path:
@@ -388,6 +417,8 @@ class JazzAnalysisCLI:
     
     def import_standard_notation(self) -> None:
         """Import and parse standard notation files."""
+        if not self._require(self.notation_parser, "Standard notation import"):
+            return
         file_path = input("Enter path to notation file (PDF, PNG, JPG, etc.): ").strip()
         
         if not file_path:
@@ -447,6 +478,8 @@ class JazzAnalysisCLI:
     
     def analyze_jazz_scales(self) -> None:
         """Analyze jazz scales in extracted or imported solo data."""
+        if not self._require(self.scale_detector, "Scale analysis"):
+            return
         print("\nJazz Scale Analysis")
         print("=" * 20)
         print("1. Analyze extracted Weimar solo data")
@@ -486,7 +519,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset
@@ -568,6 +601,8 @@ class JazzAnalysisCLI:
     
     def analyze_jazz_arpeggios(self) -> None:
         """Analyze jazz arpeggios in extracted or imported solo data."""
+        if not self._require(self.arpeggio_detector, "Arpeggio analysis"):
+            return
         print("\nJazz Arpeggio Analysis")
         print("=" * 20)
         print("1. Analyze extracted Weimar solo data")
@@ -607,7 +642,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset
@@ -691,6 +726,8 @@ class JazzAnalysisCLI:
     
     def analyze_approach_tones(self) -> None:
         """Analyze approach tones in extracted or imported solo data."""
+        if not self._require(self.approach_detector, "Approach tone analysis"):
+            return
         print("\nJazz Approach Tone Analysis")
         print("=" * 20)
         print("1. Analyze extracted Weimar solo data")
@@ -730,7 +767,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset
@@ -756,7 +793,7 @@ class JazzAnalysisCLI:
             
             # Get chord progression for context (if available)
             cursor.execute("""
-                SELECT chordchanges
+                SELECT chord_changes
                 FROM solo_info
                 WHERE melid = ?
             """, (solo_id,))
@@ -867,6 +904,12 @@ class JazzAnalysisCLI:
     
     def generate_analysis_summary(self) -> None:
         """Generate comprehensive analysis summary from all analysis results."""
+        if not (
+            self._require(self.scale_detector, "Scale analysis")
+            and self._require(self.arpeggio_detector, "Arpeggio analysis")
+            and self._require(self.approach_detector, "Approach tone analysis")
+        ):
+            return
         print("\nAnalysis Summary Generator")
         print("=" * 30)
         print("1. Generate summary from Weimar solo data")
@@ -906,7 +949,7 @@ class JazzAnalysisCLI:
             
             # Get solo metadata
             cursor.execute("""
-                SELECT si.title, si.performer, si.key, si.avgtempo, si.chordchanges
+                SELECT si.title, si.performer, si.key, si.avgtempo, si.chord_changes
                 FROM solo_info si
                 WHERE si.melid = ?
             """, (solo_id,))
@@ -921,7 +964,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset
@@ -999,6 +1042,214 @@ class JazzAnalysisCLI:
         """Generate analysis summary from notation data."""
         print("Notation summary generation not yet implemented.")
         print("This feature will be available in a future update.")
+
+    def generate_ai_analysis_summary(self) -> None:
+        """Generate chord-mapped practice guide (local + optional OpenAI polish)."""
+        print("\nAI / Chord Practice Guide")
+        print("=" * 30)
+        print("1. Chord-mapped practice guide from Weimar solo")
+        print("2. Back to main menu")
+
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            self._generate_weimar_ai_summary()
+        elif choice == "2":
+            return
+        else:
+            print("Invalid choice.")
+
+    def _generate_weimar_ai_summary(self) -> None:
+        """Chord-mapped practice guide: what to play over each chord in the solo."""
+        solo_id = input("Enter solo ID to analyze: ").strip()
+
+        if not solo_id:
+            print("No solo ID provided.")
+            return
+
+        db_path = "data/weimar_jazz_database.db"
+        if not os.path.exists(db_path):
+            print("Database not found. Please download it first (option 1).")
+            return
+
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT si.title, si.performer, si.key, si.avgtempo, si.chord_changes,
+                       si.instrument, si.style
+                FROM solo_info si
+                WHERE si.melid = ?
+            """, (solo_id,))
+
+            solo_info = cursor.fetchone()
+            if not solo_info:
+                print("Solo not found in database.")
+                conn.close()
+                return
+
+            title, performer, key, tempo, chord_changes, instrument, style = solo_info
+
+            cursor.execute("""
+                SELECT onset, pitch, duration, loud_med
+                FROM melody
+                WHERE melid = ?
+                ORDER BY onset
+            """, (solo_id,))
+
+            notes_data = cursor.fetchall()
+            if not notes_data:
+                print("No melody data found for this solo.")
+                conn.close()
+                return
+
+            notes = []
+            for onset, pitch, duration, velocity in notes_data:
+                notes.append({
+                    'onset': onset,
+                    'pitch': int(round(pitch)),
+                    'duration': duration,
+                    'velocity': velocity
+                })
+
+            solo_metadata = {
+                'title': title or 'Unknown Solo',
+                'performer': performer or 'Unknown Performer',
+                'key': key or 'Unknown Key',
+                'tempo': tempo,
+                'instrument': instrument,
+                'style': style,
+                'total_notes': len(notes),
+                'chord_changes': chord_changes,
+            }
+
+            print(f"Mapping {len(notes)} notes onto beat-level chords...")
+            advice = build_chord_advice_report(db_path, int(solo_id), notes)
+            if not advice:
+                print("No chord-mapped notes found for this solo.")
+                conn.close()
+                return
+
+            payload = advice_to_payload(advice)
+            practice_lines = [item.actionable for item in advice]
+            headline = (
+                f"{solo_metadata['title']} — {solo_metadata['performer']} "
+                f"({solo_metadata['key']}, {len(advice)} chord events with notes)"
+            )
+            priority_drills: List[str] = []
+
+            if self.openai_analyzer.is_configured():
+                print("Sending chord-mapped analysis to OpenAI for practice wording...")
+                try:
+                    guide = self.openai_analyzer.generate_chord_practice_guide(
+                        solo_metadata, payload
+                    )
+                    headline = guide.get("headline") or headline
+                    ai_lines = self.openai_analyzer._as_str_list(guide.get("practice_lines"))
+                    if ai_lines:
+                        practice_lines = ai_lines
+                    priority_drills = self.openai_analyzer._as_str_list(
+                        guide.get("priority_drills")
+                    )
+                except Exception as exc:
+                    print(f"OpenAI polish failed ({exc}). Showing local chord advice instead.")
+            else:
+                print("OPENAI_API_KEY not set — showing local chord-mapped advice.")
+
+            self._display_chord_practice_guide(headline, practice_lines, priority_drills, advice)
+
+            output_dir = "analysis_summaries"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            output_path = os.path.join(output_dir, f"solo_{solo_id}_chord_practice.txt")
+            self._export_chord_practice_guide(
+                output_path, headline, practice_lines, priority_drills, advice
+            )
+            print(f"Chord practice guide exported to: {output_path}")
+
+            conn.close()
+
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"Error generating AI analysis summary: {e}")
+
+    def _display_chord_practice_guide(
+        self,
+        headline: str,
+        practice_lines: List[str],
+        priority_drills: List[str],
+        advice,
+    ) -> None:
+        """Print chord-mapped practice instructions."""
+        print(f"\nCHORD PRACTICE GUIDE")
+        print("=" * 60)
+        print(headline)
+        print()
+        print("PLAY THIS OVER THAT")
+        print("-" * 60)
+        for line in practice_lines[:60]:
+            print(f"• {line}")
+        if len(practice_lines) > 60:
+            print(f"... ({len(practice_lines) - 60} more lines in export file)")
+
+        if priority_drills:
+            print()
+            print("PRIORITY DRILLS")
+            print("-" * 60)
+            for drill in priority_drills:
+                print(f"• {drill}")
+
+        print()
+        print("LOCAL CHORD FIT DETAILS (first 15 with notes)")
+        print("-" * 60)
+        shown = 0
+        for item in advice:
+            if item.note_count <= 0:
+                continue
+            loc = item.form or (f"bar {item.bar}" if item.bar is not None else "")
+            print(
+                f"{item.chord:<8} {loc:<8} notes={item.note_count:<3} "
+                f"best={item.best_scale} ({item.scale_fit*100:.0f}%) "
+                f"tones={','.join(item.chord_tones_hit) or '-'}"
+            )
+            shown += 1
+            if shown >= 15:
+                break
+
+    def _export_chord_practice_guide(
+        self,
+        output_path: str,
+        headline: str,
+        practice_lines: List[str],
+        priority_drills: List[str],
+        advice,
+    ) -> None:
+        """Write chord practice guide to a text file."""
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write("CHORD PRACTICE GUIDE\n")
+            f.write("=" * 60 + "\n")
+            f.write(headline + "\n\n")
+            f.write("PLAY THIS OVER THAT\n")
+            f.write("-" * 60 + "\n")
+            for line in practice_lines:
+                f.write(f"• {line}\n")
+            if priority_drills:
+                f.write("\nPRIORITY DRILLS\n")
+                f.write("-" * 60 + "\n")
+                for drill in priority_drills:
+                    f.write(f"• {drill}\n")
+            f.write("\nLOCAL CHORD FIT DETAILS\n")
+            f.write("-" * 60 + "\n")
+            for item in advice:
+                loc = item.form or (f"bar {item.bar}" if item.bar is not None else "")
+                f.write(
+                    f"{item.chord}\t{loc}\tnotes={item.note_count}\t"
+                    f"best={item.best_scale}\tfit={item.scale_fit}\t"
+                    f"play={item.actionable}\n"
+                )
     
     def _display_analysis_summary(self, summary) -> None:
         """Display analysis summary results."""
@@ -1047,6 +1298,12 @@ class JazzAnalysisCLI:
     
     def generate_formatted_report(self) -> None:
         """Generate formatted analysis report with chord changes and analysis by bar."""
+        if not (
+            self._require(self.scale_detector, "Scale analysis")
+            and self._require(self.arpeggio_detector, "Arpeggio analysis")
+            and self._require(self.approach_detector, "Approach tone analysis")
+        ):
+            return
         print("\nFormatted Report Generator")
         print("=" * 30)
         print("1. Generate formatted report from Weimar solo data")
@@ -1086,7 +1343,7 @@ class JazzAnalysisCLI:
             
             # Get solo metadata
             cursor.execute("""
-                SELECT si.title, si.performer, si.key, si.avgtempo, si.chordchanges
+                SELECT si.title, si.performer, si.key, si.avgtempo, si.chord_changes
                 FROM solo_info si
                 WHERE si.melid = ?
             """, (solo_id,))
@@ -1101,7 +1358,7 @@ class JazzAnalysisCLI:
             
             # Get melody notes data
             cursor.execute("""
-                SELECT onset, pitch, duration, velocity
+                SELECT onset, pitch, duration, loud_med
                 FROM melody
                 WHERE melid = ?
                 ORDER BY onset

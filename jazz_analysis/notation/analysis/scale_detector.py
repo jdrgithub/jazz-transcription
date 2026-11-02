@@ -13,8 +13,11 @@ try:
     from music21 import pitch, scale, key, interval
     MUSIC21_AVAILABLE = True
 except ImportError:
+    pitch = scale = key = interval = None  # type: ignore
     MUSIC21_AVAILABLE = False
-    logger.warning("music21 not available. Install with: pip install music21")
+    logger.info("music21 not available; using built-in pitch helpers for scale detection")
+
+from notation.analysis.pitch_utils import pitch_class_name, estimate_key_signature
 
 
 @dataclass
@@ -43,9 +46,6 @@ class JazzScaleDetector:
     
     def __init__(self):
         """Initialize the jazz scale detector."""
-        if not MUSIC21_AVAILABLE:
-            raise ImportError("music21 is required for scale detection. Install with: pip install music21")
-        
         # Define common jazz scales with their interval patterns
         self.jazz_scales = {
             # Major scales and modes
@@ -157,7 +157,10 @@ class JazzScaleDetector:
                     end_time = max(notes[i]['onset'] for i in matching_indices)
                     
                     # Convert root to note name
-                    root_name = pitch.Pitch(root_pitch_class).name
+                    if MUSIC21_AVAILABLE:
+                        root_name = pitch.Pitch(root_pitch_class).name
+                    else:
+                        root_name = pitch_class_name(root_pitch_class)
                     
                     scale_pattern = ScalePattern(
                         name=scale_name,
@@ -180,23 +183,19 @@ class JazzScaleDetector:
         if not pitches:
             return None
         
-        try:
-            # Convert MIDI pitches to music21 pitches
-            music21_pitches = [pitch.Pitch(p) for p in pitches]
-            
-            # Create a stream and analyze key
-            from music21 import stream
-            s = stream.Stream()
-            for p in music21_pitches:
-                s.append(p)
-            
-            # Analyze key using music21
-            detected_key = s.analyze('key')
-            return f"{detected_key.tonic.name} {detected_key.mode}"
-            
-        except Exception as e:
-            logger.warning(f"Key detection failed: {e}")
-            return None
+        if MUSIC21_AVAILABLE:
+            try:
+                music21_pitches = [pitch.Pitch(p) for p in pitches]
+                from music21 import stream
+                s = stream.Stream()
+                for p in music21_pitches:
+                    s.append(p)
+                detected_key = s.analyze('key')
+                return f"{detected_key.tonic.name} {detected_key.mode}"
+            except Exception as e:
+                logger.warning(f"music21 key detection failed: {e}")
+
+        return estimate_key_signature(pitches)
     
     def _get_most_common_scales(self, detected_scales: List[ScalePattern]) -> List[Tuple[str, int]]:
         """Get the most commonly detected scales."""

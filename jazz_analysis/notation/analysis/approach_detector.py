@@ -14,8 +14,11 @@ try:
     from music21 import pitch, interval
     MUSIC21_AVAILABLE = True
 except ImportError:
+    pitch = interval = None  # type: ignore
     MUSIC21_AVAILABLE = False
-    logger.warning("music21 not available. Install with: pip install music21")
+    logger.info("music21 not available; using built-in pitch helpers for approach detection")
+
+from notation.analysis.pitch_utils import pitch_class_name
 
 
 @dataclass
@@ -47,9 +50,6 @@ class JazzApproachDetector:
     
     def __init__(self):
         """Initialize the jazz approach tone detector."""
-        if not MUSIC21_AVAILABLE:
-            raise ImportError("music21 is required for approach tone detection. Install with: pip install music21")
-        
         # Define approach tone patterns
         self.approach_patterns = {
             # Single chromatic approaches
@@ -397,7 +397,10 @@ class JazzApproachDetector:
             if analysis.target_notes:
                 f.write("Most Targeted Notes:\n")
                 for target_pitch, frequency in analysis.target_notes:
-                    note_name = pitch.Pitch(target_pitch).name
+                    if MUSIC21_AVAILABLE:
+                        note_name = pitch.Pitch(target_pitch).name
+                    else:
+                        note_name = pitch_class_name(target_pitch)
                     f.write(f"  {note_name} ({target_pitch}): {frequency} times\n")
                 f.write("\n")
             
@@ -416,8 +419,12 @@ class JazzApproachDetector:
             f.write(f"{'-' * 50}\n")
             
             for i, pattern in enumerate(analysis.detected_patterns, 1):
-                target_name = pitch.Pitch(pattern.target_note).name
-                approach_names = [pitch.Pitch(p).name for p in pattern.approach_notes]
+                if MUSIC21_AVAILABLE:
+                    target_name = pitch.Pitch(pattern.target_note).name
+                    approach_names = [pitch.Pitch(p).name for p in pattern.approach_notes]
+                else:
+                    target_name = pitch_class_name(pattern.target_note)
+                    approach_names = [pitch_class_name(p) for p in pattern.approach_notes]
                 
                 f.write(f"\n{i}. {pattern.name}\n")
                 f.write(f"   Target Note: {target_name} ({pattern.target_note})\n")

@@ -140,10 +140,10 @@ class JazzAnalysisSummaryGenerator:
             insights.append("No significant scale patterns detected.")
             return insights
         
-        # Count scale types
+        # Count scale types by detector pattern name
         scale_counts = {}
         for scale in scale_analysis.detected_scales:
-            scale_type = scale.scale_type
+            scale_type = getattr(scale, "name", None) or getattr(scale, "scale_type", "Unknown")
             scale_counts[scale_type] = scale_counts.get(scale_type, 0) + 1
         
         # Generate insights based on scale usage
@@ -156,9 +156,12 @@ class JazzAnalysisSummaryGenerator:
         elif len(scale_counts) == 1:
             insights.append("Focused approach using primarily one scale type.")
         
-        # Check for jazz-specific scales
-        jazz_scales = ['bebop', 'blues', 'harmonic_minor', 'diminished', 'whole_tone']
-        jazz_usage = sum(scale_counts.get(scale, 0) for scale in jazz_scales)
+        # Check for jazz-specific scales (match against pattern names)
+        jazz_keywords = ['bebop', 'blues', 'harmonic minor', 'diminished', 'whole tone', 'altered']
+        jazz_usage = sum(
+            count for name, count in scale_counts.items()
+            if any(keyword in name.lower() for keyword in jazz_keywords)
+        )
         if jazz_usage > 0:
             insights.append(f"Strong jazz vocabulary with {jazz_usage} jazz-specific scale patterns.")
         
@@ -172,10 +175,14 @@ class JazzAnalysisSummaryGenerator:
             insights.append("No significant arpeggio patterns detected.")
             return insights
         
-        # Count arpeggio types
+        # Count arpeggio types by chord_type / name
         arpeggio_counts = {}
         for arpeggio in arpeggio_analysis.detected_arpeggios:
-            arpeggio_type = arpeggio.arpeggio_type
+            arpeggio_type = (
+                getattr(arpeggio, "chord_type", None)
+                or getattr(arpeggio, "arpeggio_type", None)
+                or getattr(arpeggio, "name", "Unknown")
+            )
             arpeggio_counts[arpeggio_type] = arpeggio_counts.get(arpeggio_type, 0) + 1
         
         if arpeggio_counts:
@@ -183,7 +190,11 @@ class JazzAnalysisSummaryGenerator:
             insights.append(f"Most prominent arpeggio: {self.arpeggio_types.get(most_common[0], most_common[0])} ({most_common[1]} occurrences)")
         
         # Check for extended chord usage
-        if 'extended_chords' in arpeggio_counts:
+        extended_count = sum(
+            count for name, count in arpeggio_counts.items()
+            if any(token in name.lower() for token in ("9", "11", "13", "extended"))
+        )
+        if extended_count > 0:
             insights.append("Demonstrates advanced harmonic vocabulary with extended chord arpeggios.")
         
         # Check for direction patterns
@@ -257,13 +268,26 @@ class JazzAnalysisSummaryGenerator:
         
         # Check for extended chord arpeggios
         if hasattr(arpeggio_analysis, 'detected_arpeggios'):
-            extended_count = sum(1 for a in arpeggio_analysis.detected_arpeggios if a.arpeggio_type == 'extended_chords')
+            extended_count = sum(
+                1 for a in arpeggio_analysis.detected_arpeggios
+                if any(
+                    token in str(
+                        getattr(a, "chord_type", None)
+                        or getattr(a, "arpeggio_type", None)
+                        or getattr(a, "name", "")
+                    ).lower()
+                    for token in ("9", "11", "13", "extended")
+                )
+            )
             if extended_count > 0:
                 sophistication_score += 2
         
         # Check for chromatic approach patterns
         if hasattr(approach_analysis, 'detected_patterns'):
-            chromatic_count = sum(1 for p in approach_analysis.detected_patterns if 'chromatic' in p.pattern_type)
+            chromatic_count = sum(
+                1 for p in approach_analysis.detected_patterns
+                if 'chromatic' in str(getattr(p, "pattern_type", "")).lower()
+            )
             if chromatic_count > 0:
                 sophistication_score += 1
         

@@ -8,6 +8,7 @@ Analyze jazz solos from symbolic notation (and eventually audio) and get plain-E
 - Import solos from MusicXML or standard notation
 - Detect jazz scales, arpeggios, and approach tones
 - Generate high-level summaries and formatted text reports
+- Optionally send detector findings to OpenAI for plain-English musical insights
 - Store analyzed solos in a local library
 - Search and cache public-domain transcriptions
 
@@ -25,6 +26,16 @@ python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+For AI summaries (menu option 14), set an OpenAI API key:
+
+```bash
+export OPENAI_API_KEY=sk-...
+# optional:
+export OPENAI_MODEL=gpt-4o-mini
+```
+
+Detectors still run locally; OpenAI only receives the structured analysis payload (not raw audio). If the API call fails, the CLI falls back to the rule-based summary.
 
 ## Usage
 
@@ -48,13 +59,14 @@ python jazz_analysis.py
 | 7 | Analyze jazz scales |
 | 8 | Analyze jazz arpeggios |
 | 9 | Analyze approach tones |
-| 10 | Generate analysis summary |
+| 10 | Generate analysis summary (rule-based) |
 | 11 | Generate formatted report |
 | 12 | Manage local solo library |
 | 13 | Public domain transcriptions |
-| 14 | Exit |
+| 14 | Generate AI analysis summary (OpenAI) |
+| 15 | Exit |
 
-Typical flow: download the Weimar DB → browse/select a solo → run scale/arpeggio/approach analysis → generate a summary or formatted report → optionally save to the local library.
+Typical flow: download the Weimar DB → browse/select a solo → run scale/arpeggio/approach analysis → generate a summary, AI summary, or formatted report → optionally save to the local library.
 
 ## Project structure
 

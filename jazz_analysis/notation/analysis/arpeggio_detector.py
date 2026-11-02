@@ -14,8 +14,11 @@ try:
     from music21 import pitch, chord, interval
     MUSIC21_AVAILABLE = True
 except ImportError:
+    pitch = chord = interval = None  # type: ignore
     MUSIC21_AVAILABLE = False
-    logger.warning("music21 not available. Install with: pip install music21")
+    logger.info("music21 not available; using built-in pitch helpers for arpeggio detection")
+
+from notation.analysis.pitch_utils import pitch_class_name
 
 
 @dataclass
@@ -47,9 +50,6 @@ class JazzArpeggioDetector:
     
     def __init__(self):
         """Initialize the jazz arpeggio detector."""
-        if not MUSIC21_AVAILABLE:
-            raise ImportError("music21 is required for arpeggio detection. Install with: pip install music21")
-        
         # Define common jazz chord types with their interval patterns
         self.jazz_chords = {
             # Triads
@@ -203,7 +203,10 @@ class JazzArpeggioDetector:
                     # Only consider if confidence is reasonable
                     if confidence >= 0.6:  # At least 60% of notes match
                         # Convert root to note name
-                        root_name = pitch.Pitch(root_pitch_class).name
+                        if MUSIC21_AVAILABLE:
+                            root_name = pitch.Pitch(root_pitch_class).name
+                        else:
+                            root_name = pitch_class_name(root_pitch_class)
                         
                         # Calculate time span
                         start_time = min(sequence_notes[i]['onset'] for i in matching_notes)
@@ -303,7 +306,10 @@ class JazzArpeggioDetector:
                 # Find the root note
                 root_pitch_class = self._find_chord_root(pitch_classes, chord_intervals)
                 if root_pitch_class is not None:
-                    root_name = pitch.Pitch(root_pitch_class).name
+                    if MUSIC21_AVAILABLE:
+                        root_name = pitch.Pitch(root_pitch_class).name
+                    else:
+                        root_name = pitch_class_name(root_pitch_class)
                     return f"{root_name} {chord_name}"
         
         return None

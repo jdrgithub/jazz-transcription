@@ -18,5 +18,8 @@ PyMuPDF>=1.23.0
 Pillow>=9.0.0
 pytesseract>=0.3.10
 
+# OpenAI insights
+openai>=1.40.0
+
 # Development
 pytest>=7.0.0
